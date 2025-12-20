@@ -139,6 +139,7 @@ export default function PropertyDashboard() {
       const pmi = year <= 4 ? params.pmi : 0; 
       
       const totalExpenses = maint + capex + propMan + hoa + taxes + insurance + pmi;
+      const operatingExpenses = totalExpenses + vacancyLoss;
       
       // Loan Amortization
       const interest = currentLoanBalance * params.loanRate;
