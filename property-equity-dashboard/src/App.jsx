@@ -9,8 +9,11 @@ const INITIAL_DATA = {
     homeGrowth: 0.04,
     inflation: 0.03,
     rentIncrease: 0.04,
+    vacancyRate: 0.05,
     maintenance: 300.0, // Monthly
     propManFee: 95.0, // Monthly
+    capex: 0.0, // Monthly
+    hoa: 0.0, // Monthly
     rent: 1850.0, // Monthly
     taxRate: 0.24, // Income Tax Rate
     propertyTax: 3809.04, // Annual
@@ -117,15 +120,20 @@ export default function PropertyDashboard() {
       currentHomeValue = currentHomeValue * (1 + params.homeGrowth);
       currentRent = year === 1 ? currentRent * (1 + params.rentIncrease) : currentRent * (1 + params.rentIncrease); // Apply growth
       
+      const vacancyLoss = currentRent * params.vacancyRate;
+      const effectiveGrossIncome = currentRent - vacancyLoss;
+
       // Expenses
       const inflationFactor = Math.pow(1 + params.inflation, year);
       const maint = params.maintenance * 12 * inflationFactor;
-      const propMan = params.propManFee * 12; // Assuming fixed contract or update logic here
+      const capex = params.capex * 12 * inflationFactor;
+      const propMan = params.propManFee * 12 * inflationFactor;
+      const hoa = params.hoa * 12 * inflationFactor;
       const taxes = params.propertyTax * inflationFactor;
       const insurance = params.insurance * inflationFactor;
       const pmi = year <= 4 ? params.pmi : 0; // PMI drops off after 4 years roughly
       
-      const totalExpenses = maint + propMan + taxes + insurance + pmi;
+      const totalExpenses = maint + capex + propMan + hoa + taxes + insurance + pmi;
       
       // Loan Amortization (Rough Annual)
       const interest = currentLoanBalance * params.loanRate;
@@ -134,7 +142,7 @@ export default function PropertyDashboard() {
       
       // Metrics
       const equity = currentHomeValue - currentLoanBalance;
-      const cashFlow = currentRent - totalExpenses - annualPI;
+      const cashFlow = effectiveGrossIncome - totalExpenses - annualPI;
       
       // User Share Logic
       const userEquity = equity * params.ownershipShare;
@@ -231,9 +239,13 @@ export default function PropertyDashboard() {
               <InputGroup label="Rent Growth Rate" value={params.rentIncrease} onChange={v => setParams({...params, rentIncrease: v})} step="0.005" />
               <InputGroup label="Inflation Rate" value={params.inflation} onChange={v => setParams({...params, inflation: v})} step="0.005" />
               <div className="border-t border-slate-100 pt-4"></div>
+              <InputGroup label="Vacancy Rate" value={params.vacancyRate} onChange={v => setParams({...params, vacancyRate: v})} step="0.005" />
+              <div className="border-t border-slate-100 pt-4"></div>
               <InputGroup label="Monthly Rent (Start)" value={params.rent} onChange={v => setParams({...params, rent: v})} prefix="$" />
               <InputGroup label="Monthly Maintenance" value={params.maintenance} onChange={v => setParams({...params, maintenance: v})} prefix="$" />
+              <InputGroup label="Monthly CapEx" value={params.capex} onChange={v => setParams({...params, capex: v})} prefix="$" />
               <InputGroup label="Property Management" value={params.propManFee} onChange={v => setParams({...params, propManFee: v})} prefix="$" />
+              <InputGroup label="Monthly HOA" value={params.hoa} onChange={v => setParams({...params, hoa: v})} prefix="$" />
             </div>
           </Card>
 
