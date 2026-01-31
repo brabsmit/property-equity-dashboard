@@ -163,7 +163,8 @@ export default function AddTransaction({ onTransactionAdded }) {
         type="submit"
         disabled={submitting}
         className="px-4 py-1.5 rounded-md bg-amber-400 text-slate-950 text-sm font-semibold
-          hover:bg-amber-400/80 transition-colors disabled:opacity-50 cursor-pointer"
+          hover:bg-amber-400/80 transition-colors disabled:opacity-50 cursor-pointer
+          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-1"
       >
         {submitting ? '...' : 'Add'}
       </button>

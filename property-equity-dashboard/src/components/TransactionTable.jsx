@@ -16,7 +16,7 @@ const dateFmt = new Intl.DateTimeFormat('en-US', {
 
 // ── Category badge config ────────────────────────────────────────────
 const BADGE_COLORS = {
-  mortgage: 'bg-gray-600/20 text-gray-400 dark:bg-gray-600/20 dark:text-gray-400 bg-gray-200 text-gray-600',
+  mortgage: 'bg-gray-200 text-gray-600 dark:bg-gray-600/20 dark:text-gray-400',
   rent: 'bg-amber-100 text-amber-700 dark:bg-amber-400/20 dark:text-amber-400',
   repair: 'bg-rose-100 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400',
   management_fee: 'bg-gray-100 text-gray-500 dark:bg-gray-500/20 dark:text-gray-500',
@@ -185,7 +185,7 @@ export default function TransactionTable({
         {hasMore && (
           <button
             onClick={() => setShowAll((s) => !s)}
-            className="w-full py-2.5 text-center text-xs font-mono text-amber-400 hover:text-amber-300 transition-colors border-t border-cream-100 dark:border-gray-800/30 cursor-pointer"
+            className="w-full py-2.5 text-center text-xs font-mono text-amber-400 hover:text-amber-300 transition-colors border-t border-cream-100 dark:border-gray-800/30 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-amber-400"
           >
             {showAll
               ? 'Show less'

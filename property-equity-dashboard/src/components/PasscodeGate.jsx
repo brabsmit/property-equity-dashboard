@@ -88,6 +88,7 @@ export default function PasscodeGate({ onAuthenticated }) {
             'bg-amber-400 text-slate-950',
             'hover:brightness-110 active:brightness-95',
             'transition-all cursor-pointer',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50 dark:focus-visible:ring-offset-slate-950',
           ].join(' ')}
         >
           Enter

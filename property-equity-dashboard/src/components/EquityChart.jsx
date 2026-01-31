@@ -71,7 +71,7 @@ export default function EquityChart({ projections = [], ownershipShare = 1 }) {
       ].join(' ')}
     >
       {/* Header row */}
-      <div className="flex items-center justify-between px-5 pt-5 pb-2">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-5 pt-5 pb-2">
         <h2 className="font-display text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100">
           EQUITY PROJECTION
         </h2>
@@ -81,7 +81,7 @@ export default function EquityChart({ projections = [], ownershipShare = 1 }) {
           <button
             onClick={() => setShowMyShare(false)}
             className={[
-              'px-3 py-1 rounded-full text-xs font-body font-medium transition-colors cursor-pointer',
+              'px-3 py-1 rounded-full text-xs font-body font-medium transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400',
               !showMyShare
                 ? 'bg-amber-400 text-gray-900 shadow-sm'
                 : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200',
@@ -92,7 +92,7 @@ export default function EquityChart({ projections = [], ownershipShare = 1 }) {
           <button
             onClick={() => setShowMyShare(true)}
             className={[
-              'px-3 py-1 rounded-full text-xs font-body font-medium transition-colors cursor-pointer',
+              'px-3 py-1 rounded-full text-xs font-body font-medium transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400',
               showMyShare
                 ? 'bg-amber-400 text-gray-900 shadow-sm'
                 : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200',

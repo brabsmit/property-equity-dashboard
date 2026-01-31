@@ -100,7 +100,7 @@ export default function Dashboard() {
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Header */}
-        <header className="flex items-center justify-between mb-8 pb-4 border-b border-amber-400/20">
+        <header className="flex flex-wrap items-center justify-between gap-3 mb-8 pb-4 border-b border-amber-400/20">
           <h1 className="font-display text-2xl sm:text-3xl font-semibold">
             2728 Partnership
           </h1>
@@ -110,7 +110,7 @@ export default function Dashboard() {
               onClick={handleAdminToggle}
               title={isAdmin ? 'Disable admin mode' : 'Enable admin mode'}
               className={[
-                'p-2 rounded-lg transition-colors cursor-pointer',
+                'p-2 rounded-lg transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400',
                 isAdmin
                   ? 'text-amber-400 hover:text-amber-300 bg-amber-400/10'
                   : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300',
@@ -123,7 +123,7 @@ export default function Dashboard() {
             <button
               onClick={handleLogout}
               title="Log out"
-              className="p-2 rounded-lg text-gray-400 dark:text-gray-500 hover:text-rose-500 transition-colors cursor-pointer"
+              className="p-2 rounded-lg text-gray-400 dark:text-gray-500 hover:text-rose-500 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
             >
               <LogOut size={20} />
             </button>
