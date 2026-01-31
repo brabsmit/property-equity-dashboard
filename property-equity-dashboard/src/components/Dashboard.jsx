@@ -1,33 +1,53 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Shield, ShieldCheck, LogOut } from 'lucide-react';
+import { Shield, ShieldCheck, LogOut, PencilLine } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { generateProjections } from '../lib/projections';
+import { getEffectiveLoanBalance } from '../lib/amortization';
 import SummaryCards from './SummaryCards';
 import EquityChart from './EquityChart';
 import TransactionTable from './TransactionTable';
+import UpdateValuesModal from './UpdateValuesModal';
 
 export default function Dashboard() {
   const [property, setProperty] = useState(null);
   const [partners, setPartners] = useState([]);
   const [transactions, setTransactions] = useState([]);
+  const [latestHomeValue, setLatestHomeValue] = useState(null);
+  const [latestLoanOverride, setLatestLoanOverride] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(
     () => localStorage.getItem('dashboard_admin') === 'true'
   );
+  const [showUpdateValues, setShowUpdateValues] = useState(false);
 
   // Fetch all data on mount
   useEffect(() => {
     async function fetchData() {
       setLoading(true);
-      const [propertyRes, partnersRes, transactionsRes] = await Promise.all([
-        supabase.from('property').select('*').single(),
-        supabase.from('partners').select('*'),
-        supabase.from('transactions').select('*').order('date', { ascending: false }),
-      ]);
+      const [propertyRes, partnersRes, transactionsRes, homeValueRes, loanOverrideRes] =
+        await Promise.all([
+          supabase.from('property').select('*').single(),
+          supabase.from('partners').select('*'),
+          supabase.from('transactions').select('*').order('date', { ascending: false }),
+          supabase
+            .from('property_value_history')
+            .select('*')
+            .order('recorded_at', { ascending: false })
+            .limit(1)
+            .maybeSingle(),
+          supabase
+            .from('loan_balance_history')
+            .select('*')
+            .order('recorded_at', { ascending: false })
+            .limit(1)
+            .maybeSingle(),
+        ]);
 
       if (propertyRes.data) setProperty(propertyRes.data);
       if (partnersRes.data) setPartners(partnersRes.data);
       if (transactionsRes.data) setTransactions(transactionsRes.data);
+      if (homeValueRes.data) setLatestHomeValue(homeValueRes.data);
+      if (loanOverrideRes.data) setLatestLoanOverride(loanOverrideRes.data);
 
       setLoading(false);
     }
@@ -42,6 +62,34 @@ export default function Dashboard() {
       .select('*')
       .order('date', { ascending: false });
     if (data) setTransactions(data);
+  }, []);
+
+  // Refresh history data (called after UpdateValuesModal saves)
+  const refreshHistory = useCallback(async () => {
+    const [homeValueRes, loanOverrideRes] = await Promise.all([
+      supabase
+        .from('property_value_history')
+        .select('*')
+        .order('recorded_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from('loan_balance_history')
+        .select('*')
+        .order('recorded_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ]);
+    if (homeValueRes.data) setLatestHomeValue(homeValueRes.data);
+    else setLatestHomeValue(null);
+    if (loanOverrideRes.data) setLatestLoanOverride(loanOverrideRes.data);
+    else setLatestLoanOverride(null);
+  }, []);
+
+  // Refresh property (called after ProjectionSettings saves)
+  const refreshProperty = useCallback(async () => {
+    const { data } = await supabase.from('property').select('*').single();
+    if (data) setProperty(data);
   }, []);
 
   // Admin toggle handler
@@ -65,8 +113,40 @@ export default function Dashboard() {
     window.location.reload();
   }
 
-  // Compute projections when property data is available
-  const projections = property ? generateProjections(property) : [];
+  // Derive current values from history
+  const currentHomeValue = property
+    ? latestHomeValue
+      ? Number(latestHomeValue.home_value)
+      : Number(property.home_value)
+    : 0;
+
+  const currentLoanBalance = property
+    ? getEffectiveLoanBalance(property, latestLoanOverride)
+    : 0;
+
+  // Compute three scenario projections
+  const baseProjections = property
+    ? generateProjections(property, {
+        currentHomeValue,
+        currentLoanBalance,
+      })
+    : [];
+
+  const optimisticProjections = property
+    ? generateProjections(property, {
+        rateOffset: 0.02,
+        currentHomeValue,
+        currentLoanBalance,
+      })
+    : [];
+
+  const pessimisticProjections = property
+    ? generateProjections(property, {
+        rateOffset: -0.02,
+        currentHomeValue,
+        currentLoanBalance,
+      })
+    : [];
 
   // Derive ownership share from partners (default to 1 if no partner data)
   const ownershipShare =
@@ -105,6 +185,17 @@ export default function Dashboard() {
             2728 Partnership
           </h1>
           <div className="flex items-center gap-3">
+            {/* Update Values button (admin only) */}
+            {isAdmin && (
+              <button
+                onClick={() => setShowUpdateValues(true)}
+                title="Update property values"
+                className="p-2 rounded-lg text-gray-400 dark:text-gray-500 hover:text-amber-400 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+              >
+                <PencilLine size={20} />
+              </button>
+            )}
+
             {/* Admin toggle */}
             <button
               onClick={handleAdminToggle}
@@ -134,8 +225,10 @@ export default function Dashboard() {
         <SummaryCards
           property={property}
           transactions={transactions}
-          projections={projections}
+          projections={baseProjections}
           ownershipShare={ownershipShare}
+          currentHomeValue={currentHomeValue}
+          currentLoanBalance={currentLoanBalance}
         />
 
         {/* Gold separator */}
@@ -153,10 +246,31 @@ export default function Dashboard() {
 
         {/* Equity Chart */}
         <EquityChart
-          projections={projections}
+          baseProjections={baseProjections}
+          optimisticProjections={optimisticProjections}
+          pessimisticProjections={pessimisticProjections}
           ownershipShare={ownershipShare}
+          isAdmin={isAdmin}
+          property={property}
+          onPropertySaved={refreshProperty}
         />
       </div>
+
+      {/* Update Values Modal */}
+      {showUpdateValues && (
+        <UpdateValuesModal
+          property={property}
+          latestHomeValue={latestHomeValue}
+          latestLoanOverride={latestLoanOverride}
+          currentCalculatedBalance={
+            property?.original_loan_amount && property?.loan_start_date
+              ? getEffectiveLoanBalance(property, null)
+              : null
+          }
+          onClose={() => setShowUpdateValues(false)}
+          onSaved={refreshHistory}
+        />
+      )}
     </div>
   );
 }

@@ -71,20 +71,23 @@ export default function SummaryCards({
   transactions = [],
   projections = [],
   ownershipShare = 1,
+  currentHomeValue,
+  currentLoanBalance,
 }) {
   // --- Compute raw values ---
 
-  // Card 1: Your Equity
+  // Card 1: Your Equity (Year 0 = current actual values)
   const equity =
     projections.length > 0
       ? Math.round(projections[0].equity * ownershipShare)
       : 0;
 
-  // Delta: annual equity growth (year 2 - year 1), expressed as monthly estimate
+  // Delta: equity growth per month estimate (Year 2 - Year 1) / 12
+  // projections[1] = Year 1, projections[2] = Year 2
   const equityDelta =
-    projections.length >= 2
+    projections.length >= 3
       ? Math.round(
-          ((projections[1].equity - projections[0].equity) * ownershipShare) / 12
+          ((projections[2].equity - projections[1].equity) * ownershipShare) / 12
         )
       : 0;
 
