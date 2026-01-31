@@ -3,11 +3,9 @@ import { Shield, ShieldCheck, LogOut } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { generateProjections } from '../lib/projections';
 import SummaryCards from './SummaryCards';
+import EquityChart from './EquityChart';
 const TransactionTable = ({ transactions, isAdmin, onTransactionAdded }) => (
   <div className="text-gray-500 font-mono text-sm">Transactions loading...</div>
-);
-const EquityChart = ({ projections, ownershipShare }) => (
-  <div className="text-gray-500 font-mono text-sm">Equity Chart loading...</div>
 );
 
 export default function Dashboard() {
