@@ -11,6 +11,7 @@ import {
   ComposedChart,
 } from 'recharts';
 import ProjectionSettings from './ProjectionSettings';
+import CashFlowChart from './CashFlowChart';
 
 const formatCurrency = (value) => {
   if (value >= 1000) return `$${(value / 1000).toFixed(0)}K`;
@@ -62,6 +63,9 @@ export default function EquityChart({
   baseProjections = [],
   optimisticProjections = [],
   pessimisticProjections = [],
+  baseCashFlow = [],
+  optimisticCashFlow = [],
+  pessimisticCashFlow = [],
   ownershipShare = 1,
   isAdmin = false,
   property = null,
@@ -69,6 +73,7 @@ export default function EquityChart({
 }) {
   const [showMyShare, setShowMyShare] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [activeTab, setActiveTab] = useState('equity');
 
   const sharePercent = Math.round(ownershipShare * 100);
 
@@ -93,9 +98,32 @@ export default function EquityChart({
       {/* Header row */}
       <div className="flex flex-wrap items-center justify-between gap-2 px-5 pt-5 pb-2">
         <div className="flex items-center gap-2">
-          <h2 className="font-display text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100">
-            EQUITY PROJECTION
-          </h2>
+          {/* Tabs */}
+          <div className="flex items-center gap-0">
+            <button
+              onClick={() => setActiveTab('equity')}
+              className={[
+                'font-display text-base sm:text-lg font-semibold transition-colors cursor-pointer pb-1 border-b-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400',
+                activeTab === 'equity'
+                  ? 'text-gray-900 dark:text-gray-100 border-amber-400'
+                  : 'text-gray-400 dark:text-gray-500 border-transparent hover:text-gray-600 dark:hover:text-gray-300',
+              ].join(' ')}
+            >
+              EQUITY
+            </button>
+            <span className="mx-2 text-gray-300 dark:text-gray-600 select-none">/</span>
+            <button
+              onClick={() => setActiveTab('cashflow')}
+              className={[
+                'font-display text-base sm:text-lg font-semibold transition-colors cursor-pointer pb-1 border-b-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400',
+                activeTab === 'cashflow'
+                  ? 'text-gray-900 dark:text-gray-100 border-amber-400'
+                  : 'text-gray-400 dark:text-gray-500 border-transparent hover:text-gray-600 dark:hover:text-gray-300',
+              ].join(' ')}
+            >
+              CASH FLOW
+            </button>
+          </div>
           {isAdmin && (
             <button
               onClick={() => setShowSettings(!showSettings)}
@@ -148,101 +176,136 @@ export default function EquityChart({
       )}
 
       {/* Chart */}
-      <div className="px-3 pb-3 pt-2">
-        <ResponsiveContainer width="100%" height={300}>
-          <ComposedChart
-            data={chartData}
-            margin={{ top: 10, right: 20, left: 10, bottom: 0 }}
-          >
-            <defs>
-              <linearGradient id="equityGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#d4a853" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="#d4a853" stopOpacity={0} />
-              </linearGradient>
-            </defs>
+      {activeTab === 'equity' ? (
+        <div className="px-3 pb-3 pt-2">
+          <ResponsiveContainer width="100%" height={300}>
+            <ComposedChart
+              data={chartData}
+              margin={{ top: 10, right: 20, left: 10, bottom: 0 }}
+            >
+              <defs>
+                <linearGradient id="equityGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#d4a853" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#d4a853" stopOpacity={0} />
+                </linearGradient>
+              </defs>
 
-            <CartesianGrid
-              strokeDasharray="3 3"
-              stroke="currentColor"
-              className="text-gray-200 dark:text-gray-800"
-              opacity={0.3}
-            />
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="currentColor"
+                className="text-gray-200 dark:text-gray-800"
+                opacity={0.3}
+              />
 
-            <XAxis
-              dataKey="year"
-              tick={{ fontSize: 12, fontFamily: 'Source Sans 3, sans-serif' }}
-              stroke="#9ca3af"
-              tickLine={false}
-              axisLine={{ stroke: '#9ca3af', strokeOpacity: 0.3 }}
-            />
+              <XAxis
+                dataKey="year"
+                tick={{ fontSize: 12, fontFamily: 'Source Sans 3, sans-serif' }}
+                stroke="#9ca3af"
+                tickLine={false}
+                axisLine={{ stroke: '#9ca3af', strokeOpacity: 0.3 }}
+              />
 
-            <YAxis
-              tickFormatter={formatCurrency}
-              tick={{ fontSize: 12, fontFamily: 'JetBrains Mono, monospace' }}
-              stroke="#9ca3af"
-              tickLine={false}
-              axisLine={false}
-              width={55}
-            />
+              <YAxis
+                tickFormatter={formatCurrency}
+                tick={{ fontSize: 12, fontFamily: 'JetBrains Mono, monospace' }}
+                stroke="#9ca3af"
+                tickLine={false}
+                axisLine={false}
+                width={55}
+              />
 
-            <Tooltip content={<CustomTooltip />} />
+              <Tooltip content={<CustomTooltip />} />
 
-            {/* Optimistic line (dashed, above) */}
-            <Line
-              type="monotone"
-              dataKey="optimistic"
-              stroke="#d4a853"
-              strokeWidth={1}
-              strokeDasharray="4 4"
-              strokeOpacity={0.4}
-              dot={false}
-              isAnimationActive={true}
-              animationDuration={1500}
-            />
+              {/* Optimistic line (dashed, above) */}
+              <Line
+                type="monotone"
+                dataKey="optimistic"
+                stroke="#d4a853"
+                strokeWidth={1}
+                strokeDasharray="4 4"
+                strokeOpacity={0.4}
+                dot={false}
+                isAnimationActive={true}
+                animationDuration={1500}
+              />
 
-            {/* Base area (solid fill) */}
-            <Area
-              type="monotone"
-              dataKey="base"
-              stroke="#d4a853"
-              strokeWidth={2}
-              fill="url(#equityGradient)"
-              isAnimationActive={true}
-              animationDuration={1500}
-              animationEasing="ease-out"
-            />
+              {/* Base area (solid fill) */}
+              <Area
+                type="monotone"
+                dataKey="base"
+                stroke="#d4a853"
+                strokeWidth={2}
+                fill="url(#equityGradient)"
+                isAnimationActive={true}
+                animationDuration={1500}
+                animationEasing="ease-out"
+              />
 
-            {/* Pessimistic line (dashed, below) */}
-            <Line
-              type="monotone"
-              dataKey="pessimistic"
-              stroke="#9ca3af"
-              strokeWidth={1}
-              strokeDasharray="4 4"
-              strokeOpacity={0.5}
-              dot={false}
-              isAnimationActive={true}
-              animationDuration={1500}
-            />
-          </ComposedChart>
-        </ResponsiveContainer>
-      </div>
+              {/* Pessimistic line (dashed, below) */}
+              <Line
+                type="monotone"
+                dataKey="pessimistic"
+                stroke="#9ca3af"
+                strokeWidth={1}
+                strokeDasharray="4 4"
+                strokeOpacity={0.5}
+                dot={false}
+                isAnimationActive={true}
+                animationDuration={1500}
+              />
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
+      ) : (
+        <CashFlowChart
+          baseCashFlow={baseCashFlow}
+          optimisticCashFlow={optimisticCashFlow}
+          pessimisticCashFlow={pessimisticCashFlow}
+          ownershipShare={ownershipShare}
+          showMyShare={showMyShare}
+        />
+      )}
 
       {/* Legend */}
-      <div className="flex items-center justify-center gap-4 pb-4 text-[11px] font-body text-gray-400 dark:text-gray-500">
-        <span className="flex items-center gap-1.5">
-          <span className="inline-block w-4 h-0.5 bg-amber-400 rounded" />
-          Base
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="inline-block w-4 h-0.5 bg-amber-400/40 rounded" style={{ backgroundImage: 'repeating-linear-gradient(90deg, #d4a853 0, #d4a853 3px, transparent 3px, transparent 6px)' }} />
-          +2%
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="inline-block w-4 h-0.5 bg-gray-400/50 rounded" style={{ backgroundImage: 'repeating-linear-gradient(90deg, #9ca3af 0, #9ca3af 3px, transparent 3px, transparent 6px)' }} />
-          -2%
-        </span>
-      </div>
+      {activeTab === 'equity' ? (
+        <div className="flex items-center justify-center gap-4 pb-4 text-[11px] font-body text-gray-400 dark:text-gray-500">
+          <span className="flex items-center gap-1.5">
+            <span className="inline-block w-4 h-0.5 bg-amber-400 rounded" />
+            Base
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="inline-block w-4 h-0.5 bg-amber-400/40 rounded" style={{ backgroundImage: 'repeating-linear-gradient(90deg, #d4a853 0, #d4a853 3px, transparent 3px, transparent 6px)' }} />
+            +2%
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="inline-block w-4 h-0.5 bg-gray-400/50 rounded" style={{ backgroundImage: 'repeating-linear-gradient(90deg, #9ca3af 0, #9ca3af 3px, transparent 3px, transparent 6px)' }} />
+            -2%
+          </span>
+        </div>
+      ) : (
+        <div className="flex flex-wrap items-center justify-center gap-4 pb-4 text-[11px] font-body text-gray-400 dark:text-gray-500">
+          <span className="flex items-center gap-1.5">
+            <span className="inline-block w-3 h-3 rounded-sm bg-amber-400/70" />
+            Monthly net (+)
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="inline-block w-3 h-3 rounded-sm bg-rose-500/70" />
+            Monthly net (-)
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="inline-block w-4 h-0.5 bg-amber-400 rounded" />
+            Cumulative
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="inline-block w-4 h-0.5 bg-amber-400/40 rounded" style={{ backgroundImage: 'repeating-linear-gradient(90deg, #d4a853 0, #d4a853 3px, transparent 3px, transparent 6px)' }} />
+            +2%
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="inline-block w-4 h-0.5 bg-gray-400/50 rounded" style={{ backgroundImage: 'repeating-linear-gradient(90deg, #9ca3af 0, #9ca3af 3px, transparent 3px, transparent 6px)' }} />
+            -2%
+          </span>
+        </div>
+      )}
     </div>
   );
 }
