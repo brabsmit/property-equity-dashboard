@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { monthlyMortgagePI } from '../lib/projections';
 
 const currencyFormat = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -66,6 +67,57 @@ function runningTotal(transactions) {
   return transactions.reduce((sum, t) => sum + (t.amount ?? 0), 0);
 }
 
+/**
+ * Calculate projected net monthly cash flow using a hybrid approach:
+ * - For rent, mortgage, management: use last month's actual if available, else assumptions
+ * - For escrow, maintenance: always use assumptions
+ * - Exclude irregular categories (repair, insurance, tax, other)
+ */
+function calculateProjectedMonthlyNet(property, transactions) {
+  if (!property) return 0;
+
+  // Find the most recent month with at least one transaction
+  let lastMonthTotals = {};
+  if (transactions.length > 0) {
+    // Sort descending by date to find the most recent month
+    const sorted = [...transactions].sort(
+      (a, b) => new Date(b.date) - new Date(a.date)
+    );
+    const latest = new Date(sorted[0].date);
+    const targetYear = latest.getFullYear();
+    const targetMonth = latest.getMonth();
+
+    // Sum amounts by category for that month
+    for (const t of sorted) {
+      const d = new Date(t.date);
+      if (d.getFullYear() !== targetYear || d.getMonth() !== targetMonth) break;
+      const cat = t.category;
+      if (!lastMonthTotals[cat]) lastMonthTotals[cat] = 0;
+      lastMonthTotals[cat] += Math.abs(t.amount ?? 0);
+    }
+  }
+
+  // Mortgage P&I from assumptions
+  const assumedMortgage = property.original_loan_amount && property.interest_rate && property.loan_term_years
+    ? monthlyMortgagePI(
+        Number(property.original_loan_amount),
+        Number(property.interest_rate),
+        property.loan_term_years
+      )
+    : 0;
+
+  // Hybrid: use actuals if available, else assumptions
+  const projectedRent = lastMonthTotals.rent ?? Number(property.monthly_rent ?? 0);
+  const projectedMortgage = lastMonthTotals.mortgage ?? assumedMortgage;
+  const projectedManagement = lastMonthTotals.management_fee ?? Number(property.monthly_management ?? 0);
+
+  // Always from assumptions
+  const projectedEscrow = Number(property.monthly_escrow ?? 0);
+  const projectedMaintenance = Number(property.monthly_maintenance ?? 0);
+
+  return projectedRent - projectedMortgage - projectedEscrow - projectedMaintenance - projectedManagement;
+}
+
 export default function SummaryCards({
   property,
   transactions = [],
@@ -99,10 +151,16 @@ export default function SummaryCards({
   // Card 3: Running Balance
   const running = Math.round(runningTotal(transactions) * ownershipShare);
 
+  // Card 4: Next Month Projected
+  const projectedNet = Math.round(
+    calculateProjectedMonthlyNet(property, transactions) * ownershipShare
+  );
+
   // --- Count-up animated values ---
   const animatedEquity = useCountUp(equity);
   const animatedMonth = useCountUp(monthCashFlow);
   const animatedRunning = useCountUp(running);
+  const animatedProjected = useCountUp(projectedNet);
 
   // --- Card definitions ---
   const cards = [
@@ -130,10 +188,17 @@ export default function SummaryCards({
       colorClass: running >= 0 ? 'text-amber-400' : 'text-rose-500',
       emphasis: false,
     },
+    {
+      label: 'NEXT MONTH',
+      value: animatedProjected,
+      delta: 'projected',
+      colorClass: projectedNet >= 0 ? 'text-amber-400' : 'text-rose-500',
+      emphasis: false,
+    },
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
       {cards.map((card, index) => (
         <div
           key={card.label}
