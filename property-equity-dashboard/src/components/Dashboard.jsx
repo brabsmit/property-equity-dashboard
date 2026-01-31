@@ -4,9 +4,7 @@ import { supabase } from '../lib/supabase';
 import { generateProjections } from '../lib/projections';
 import SummaryCards from './SummaryCards';
 import EquityChart from './EquityChart';
-const TransactionTable = ({ transactions, isAdmin, onTransactionAdded }) => (
-  <div className="text-gray-500 font-mono text-sm">Transactions loading...</div>
-);
+import TransactionTable from './TransactionTable';
 
 export default function Dashboard() {
   const [property, setProperty] = useState(null);
