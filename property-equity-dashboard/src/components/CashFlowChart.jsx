@@ -106,6 +106,8 @@ export default function CashFlowChart({
 
           <XAxis
             dataKey="month"
+            type="number"
+            domain={[0, 119]}
             ticks={ticks}
             tickFormatter={(month) => {
               const d = chartData.find((item) => item.month === month);
@@ -151,6 +153,7 @@ export default function CashFlowChart({
           <Bar
             yAxisId="monthly"
             dataKey="net"
+            barSize={3}
             opacity={0.7}
             isAnimationActive={true}
             animationDuration={1500}
