@@ -2,11 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Shield, ShieldCheck, LogOut } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { generateProjections } from '../lib/projections';
-
-// Temporary stubs until Tasks 6-8 create these
-const SummaryCards = ({ property, transactions, ownershipShare }) => (
-  <div className="text-gray-500 font-mono text-sm">Summary Cards loading...</div>
-);
+import SummaryCards from './SummaryCards';
 const TransactionTable = ({ transactions, isAdmin, onTransactionAdded }) => (
   <div className="text-gray-500 font-mono text-sm">Transactions loading...</div>
 );
@@ -142,6 +138,7 @@ export default function Dashboard() {
         <SummaryCards
           property={property}
           transactions={transactions}
+          projections={projections}
           ownershipShare={ownershipShare}
         />
 
