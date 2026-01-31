@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Shield, ShieldCheck, LogOut, PencilLine } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { generateProjections } from '../lib/projections';
+import { generateProjections, generateMonthlyCashFlow } from '../lib/projections';
 import { getEffectiveLoanBalance } from '../lib/amortization';
 import SummaryCards from './SummaryCards';
 import EquityChart from './EquityChart';
@@ -148,6 +148,19 @@ export default function Dashboard() {
       })
     : [];
 
+  // Compute three scenario cash flow projections
+  const baseCashFlow = property
+    ? generateMonthlyCashFlow(property, { currentLoanBalance })
+    : [];
+
+  const optimisticCashFlow = property
+    ? generateMonthlyCashFlow(property, { rateOffset: 0.02, currentLoanBalance })
+    : [];
+
+  const pessimisticCashFlow = property
+    ? generateMonthlyCashFlow(property, { rateOffset: -0.02, currentLoanBalance })
+    : [];
+
   // Derive ownership share from partners (default to 1 if no partner data)
   const ownershipShare =
     partners.length > 0 ? partners[0].ownership_share : 1;
@@ -249,6 +262,9 @@ export default function Dashboard() {
           baseProjections={baseProjections}
           optimisticProjections={optimisticProjections}
           pessimisticProjections={pessimisticProjections}
+          baseCashFlow={baseCashFlow}
+          optimisticCashFlow={optimisticCashFlow}
+          pessimisticCashFlow={pessimisticCashFlow}
           ownershipShare={ownershipShare}
           isAdmin={isAdmin}
           property={property}
