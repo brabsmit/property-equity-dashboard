@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Pencil, Trash2 } from 'lucide-react';
 import AddTransaction from './AddTransaction';
 
 const INITIAL_ROWS = 15;
@@ -64,7 +65,7 @@ function formatDate(dateStr) {
 }
 
 // ── Mobile card ──────────────────────────────────────────────────────
-function TransactionCard({ tx }) {
+function TransactionCard({ tx, isAdmin, onEdit, onDelete }) {
   return (
     <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-cream-100 dark:border-gray-800/30 hover:bg-cream-100 dark:hover:bg-gray-800/30 transition-colors">
       <div className="flex flex-col gap-1 min-w-0">
@@ -81,6 +82,28 @@ function TransactionCard({ tx }) {
         )}
       </div>
       <div className="shrink-0 text-sm text-right">{formatAmount(tx.amount)}</div>
+      {isAdmin && (
+        <div className="flex items-center gap-1 shrink-0 ml-2">
+          <button
+            type="button"
+            onClick={() => onEdit?.(tx)}
+            title="Edit"
+            aria-label="Edit transaction"
+            className="p-1 rounded text-gray-400 hover:text-amber-400 transition-colors cursor-pointer"
+          >
+            <Pencil size={14} />
+          </button>
+          <button
+            type="button"
+            onClick={() => onDelete?.(tx)}
+            title="Delete"
+            aria-label="Delete transaction"
+            className="p-1 rounded text-gray-400 hover:text-rose-500 transition-colors cursor-pointer"
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -90,6 +113,8 @@ export default function TransactionTable({
   transactions = [],
   isAdmin = false,
   onTransactionAdded,
+  onEdit,
+  onDelete,
 }) {
   const [showAll, setShowAll] = useState(false);
 
@@ -131,6 +156,9 @@ export default function TransactionTable({
                 <th className="text-left px-4 py-2.5 font-medium">Category</th>
                 <th className="text-left px-4 py-2.5 font-medium">Description</th>
                 <th className="text-right px-4 py-2.5 font-medium">Amount</th>
+                {isAdmin && (
+                  <th className="text-right px-4 py-2.5 font-medium w-[80px]">Actions</th>
+                )}
               </tr>
             </thead>
             <tbody>
@@ -151,13 +179,35 @@ export default function TransactionTable({
                   <td className="px-4 py-2.5 text-right whitespace-nowrap">
                     {formatAmount(tx.amount)}
                   </td>
+                  {isAdmin && (
+                    <td className="px-4 py-2.5 text-right whitespace-nowrap">
+                      <button
+                        type="button"
+                        onClick={() => onEdit?.(tx)}
+                        title="Edit transaction"
+                        aria-label="Edit transaction"
+                        className="p-1 rounded text-gray-400 hover:text-amber-400 transition-colors cursor-pointer"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onDelete?.(tx)}
+                        title="Delete transaction"
+                        aria-label="Delete transaction"
+                        className="p-1 rounded text-gray-400 hover:text-rose-500 transition-colors cursor-pointer ml-1"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
 
               {transactions.length === 0 && (
                 <tr>
                   <td
-                    colSpan={4}
+                    colSpan={isAdmin ? 5 : 4}
                     className="px-4 py-8 text-center text-gray-500 dark:text-gray-600 font-mono text-xs"
                   >
                     No transactions yet.
@@ -171,7 +221,7 @@ export default function TransactionTable({
         {/* ── Mobile cards (visible only on sm) ────────────────────── */}
         <div className="sm:hidden">
           {visible.map((tx) => (
-            <TransactionCard key={tx.id} tx={tx} />
+            <TransactionCard key={tx.id} tx={tx} isAdmin={isAdmin} onEdit={onEdit} onDelete={onDelete} />
           ))}
 
           {transactions.length === 0 && (
