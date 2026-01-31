@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Shield, ShieldCheck, LogOut, PencilLine } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { generateProjections, generateMonthlyCashFlow } from '../lib/projections';
@@ -124,42 +124,49 @@ export default function Dashboard() {
     ? getEffectiveLoanBalance(property, latestLoanOverride)
     : 0;
 
-  // Compute three scenario projections
-  const baseProjections = property
-    ? generateProjections(property, {
-        currentHomeValue,
-        currentLoanBalance,
-      })
-    : [];
+  // Compute three scenario equity projections (memoized)
+  const baseProjections = useMemo(
+    () => property
+      ? generateProjections(property, { currentHomeValue, currentLoanBalance })
+      : [],
+    [property, currentHomeValue, currentLoanBalance]
+  );
 
-  const optimisticProjections = property
-    ? generateProjections(property, {
-        rateOffset: 0.02,
-        currentHomeValue,
-        currentLoanBalance,
-      })
-    : [];
+  const optimisticProjections = useMemo(
+    () => property
+      ? generateProjections(property, { rateOffset: 0.02, currentHomeValue, currentLoanBalance })
+      : [],
+    [property, currentHomeValue, currentLoanBalance]
+  );
 
-  const pessimisticProjections = property
-    ? generateProjections(property, {
-        rateOffset: -0.02,
-        currentHomeValue,
-        currentLoanBalance,
-      })
-    : [];
+  const pessimisticProjections = useMemo(
+    () => property
+      ? generateProjections(property, { rateOffset: -0.02, currentHomeValue, currentLoanBalance })
+      : [],
+    [property, currentHomeValue, currentLoanBalance]
+  );
 
-  // Compute three scenario cash flow projections
-  const baseCashFlow = property
-    ? generateMonthlyCashFlow(property, { currentLoanBalance })
-    : [];
+  // Compute three scenario cash flow projections (memoized)
+  const baseCashFlow = useMemo(
+    () => property
+      ? generateMonthlyCashFlow(property, { currentLoanBalance })
+      : [],
+    [property, currentLoanBalance]
+  );
 
-  const optimisticCashFlow = property
-    ? generateMonthlyCashFlow(property, { rateOffset: 0.02, currentLoanBalance })
-    : [];
+  const optimisticCashFlow = useMemo(
+    () => property
+      ? generateMonthlyCashFlow(property, { rateOffset: 0.02, currentLoanBalance })
+      : [],
+    [property, currentLoanBalance]
+  );
 
-  const pessimisticCashFlow = property
-    ? generateMonthlyCashFlow(property, { rateOffset: -0.02, currentLoanBalance })
-    : [];
+  const pessimisticCashFlow = useMemo(
+    () => property
+      ? generateMonthlyCashFlow(property, { rateOffset: -0.02, currentLoanBalance })
+      : [],
+    [property, currentLoanBalance]
+  );
 
   // Derive ownership share from partners (default to 1 if no partner data)
   const ownershipShare =

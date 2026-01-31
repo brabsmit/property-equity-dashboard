@@ -45,6 +45,12 @@ function CashFlowTooltip({ active, payload }) {
       <p className="text-sm font-mono text-amber-400 font-semibold mt-1">
         Net: {currencyFull.format(data.net)}
       </p>
+      <p className="text-xs font-mono text-gray-300">
+        Tax benefit: {currencyFull.format(data.taxBenefit)}
+      </p>
+      <p className="text-xs font-mono text-amber-200">
+        Adj. net: {currencyFull.format(data.adjustedNet)}
+      </p>
       <div className="mt-2 pt-2 border-t border-gray-700">
         {data.cumulativeOptimistic !== undefined && (
           <p className="text-xs font-mono text-amber-300/70">
@@ -75,12 +81,13 @@ export default function CashFlowChart({
     showMyShare ? Math.round(val * ownershipShare) : val;
 
   const chartData = baseCashFlow.map((d, i) => ({
-    ...d,
     month: d.month,
     monthLabel: d.monthLabel,
     income: applyShare(d.income),
     expenses: applyShare(d.expenses),
     net: applyShare(d.net),
+    taxBenefit: applyShare(d.taxBenefit),
+    adjustedNet: applyShare(d.adjustedNet),
     cumulative: applyShare(d.cumulative),
     cumulativeOptimistic: applyShare(optimisticCashFlow[i]?.cumulative ?? d.cumulative),
     cumulativePessimistic: applyShare(pessimisticCashFlow[i]?.cumulative ?? d.cumulative),
