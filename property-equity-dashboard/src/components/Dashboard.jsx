@@ -7,6 +7,7 @@ import SummaryCards from './SummaryCards';
 import EquityChart from './EquityChart';
 import TransactionTable from './TransactionTable';
 import UpdateValuesModal from './UpdateValuesModal';
+import EditTransactionModal from './EditTransactionModal';
 
 export default function Dashboard() {
   const [property, setProperty] = useState(null);
@@ -19,6 +20,9 @@ export default function Dashboard() {
     () => localStorage.getItem('dashboard_admin') === 'true'
   );
   const [showUpdateValues, setShowUpdateValues] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState(null);
+  const [deletingTransaction, setDeletingTransaction] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Fetch all data on mount
   useEffect(() => {
@@ -91,6 +95,23 @@ export default function Dashboard() {
     const { data } = await supabase.from('property').select('*').single();
     if (data) setProperty(data);
   }, []);
+
+  // Delete a transaction after confirmation
+  const handleDeleteConfirm = useCallback(async () => {
+    if (!deletingTransaction) return;
+    setDeleting(true);
+    const { error } = await supabase
+      .from('transactions')
+      .delete()
+      .eq('id', deletingTransaction.id);
+    if (error) {
+      setDeleting(false);
+      return;
+    }
+    await refreshTransactions();
+    setDeletingTransaction(null);
+    setDeleting(false);
+  }, [deletingTransaction, refreshTransactions]);
 
   // Admin toggle handler
   function handleAdminToggle() {
@@ -259,6 +280,8 @@ export default function Dashboard() {
           transactions={transactions}
           isAdmin={isAdmin}
           onTransactionAdded={refreshTransactions}
+          onEdit={setEditingTransaction}
+          onDelete={setDeletingTransaction}
         />
 
         {/* Gold separator */}
@@ -293,6 +316,55 @@ export default function Dashboard() {
           onClose={() => setShowUpdateValues(false)}
           onSaved={refreshHistory}
         />
+      )}
+
+      {/* Edit Transaction Modal */}
+      {editingTransaction && (
+        <EditTransactionModal
+          transaction={editingTransaction}
+          onClose={() => setEditingTransaction(null)}
+          onSaved={refreshTransactions}
+        />
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      {deletingTransaction && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setDeletingTransaction(null)}
+          />
+          <div className="relative w-full max-w-sm rounded-xl border bg-white dark:bg-gray-900 border-cream-100 dark:border-gray-800 shadow-2xl">
+            <div className="px-5 py-5">
+              <h2 className="font-display text-lg font-semibold mb-2">Delete Transaction?</h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                {deletingTransaction.category.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+                {' \u2014 '}
+                {Number(deletingTransaction.amount) < 0 ? '-' : '+'}
+                ${Math.abs(Number(deletingTransaction.amount)).toFixed(2)}
+                {' on '}
+                {deletingTransaction.date}
+              </p>
+            </div>
+            <div className="flex justify-end gap-2 px-5 py-4 border-t border-cream-100 dark:border-gray-800">
+              <button
+                onClick={() => setDeletingTransaction(null)}
+                className="px-4 py-2 rounded-md text-sm font-body text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteConfirm}
+                disabled={deleting}
+                className="px-4 py-2 rounded-md bg-rose-500 text-white text-sm font-semibold
+                  hover:bg-rose-600 transition-colors disabled:opacity-50 cursor-pointer
+                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-1"
+              >
+                {deleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
