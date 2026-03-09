@@ -8,6 +8,7 @@ import EquityChart from './EquityChart';
 import TransactionTable from './TransactionTable';
 import UpdateValuesModal from './UpdateValuesModal';
 import EditTransactionModal from './EditTransactionModal';
+import QuarterlyReconciliation from './QuarterlyReconciliation';
 
 export default function Dashboard() {
   const [property, setProperty] = useState(null);
@@ -282,6 +283,16 @@ export default function Dashboard() {
           onTransactionAdded={refreshTransactions}
           onEdit={setEditingTransaction}
           onDelete={setDeletingTransaction}
+        />
+
+        {/* Gold separator */}
+        <div className="border-b border-amber-400/20 my-8" />
+
+        {/* Quarterly Reconciliation */}
+        <QuarterlyReconciliation
+          transactions={transactions}
+          property={property}
+          ownershipShare={ownershipShare}
         />
 
         {/* Gold separator */}

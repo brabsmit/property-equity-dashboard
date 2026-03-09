@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { monthlyMortgagePI } from '../lib/projections';
+import { getQuarterInfo, getDaysRemaining, getMonthsRemainingInQuarter, quarterToDateTotal } from '../lib/quarters';
 
 const currencyFormat = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -143,24 +144,32 @@ export default function SummaryCards({
         )
       : 0;
 
-  // Card 2: This Month's Cash Flow
-  const monthCashFlow = Math.round(
-    currentMonthTotal(transactions) * ownershipShare
-  );
+  // Card 2: Quarter to Date
+  const quarterInfo = getQuarterInfo();
+  const daysLeft = getDaysRemaining(quarterInfo.endDate);
+  const qtdRaw = quarterToDateTotal(transactions);
+  const qtdValue = Math.round(qtdRaw * ownershipShare);
 
   // Card 3: Running Balance
   const running = Math.round(runningTotal(transactions) * ownershipShare);
 
-  // Card 4: Next Month Projected
-  const projectedNet = Math.round(
-    calculateProjectedMonthlyNet(property, transactions) * ownershipShare
-  );
+  // Card 4: Estimated Quarter End
+  // QTD actuals + projected monthly net × remaining full months
+  const monthlyNet = calculateProjectedMonthlyNet(property, transactions);
+  const remainingMonths = getMonthsRemainingInQuarter();
+  // Prorate current month: fraction of days left in this month
+  const now = new Date();
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const daysLeftInMonth = daysInMonth - now.getDate();
+  const currentMonthProration = daysLeftInMonth / daysInMonth;
+  const projectedRemaining = (monthlyNet * currentMonthProration) + (monthlyNet * remainingMonths);
+  const estQuarterEnd = Math.round((qtdRaw + projectedRemaining) * ownershipShare);
 
   // --- Count-up animated values ---
   const animatedEquity = useCountUp(equity);
-  const animatedMonth = useCountUp(monthCashFlow);
+  const animatedQTD = useCountUp(qtdValue);
   const animatedRunning = useCountUp(running);
-  const animatedProjected = useCountUp(projectedNet);
+  const animatedEstEnd = useCountUp(estQuarterEnd);
 
   // --- Card definitions ---
   const cards = [
@@ -175,10 +184,10 @@ export default function SummaryCards({
       emphasis: true,
     },
     {
-      label: 'THIS MONTH',
-      value: animatedMonth,
-      delta: null,
-      colorClass: monthCashFlow >= 0 ? 'text-amber-400' : 'text-rose-500',
+      label: 'QUARTER TO DATE',
+      value: animatedQTD,
+      delta: `${quarterInfo.label} · ${daysLeft}d left`,
+      colorClass: qtdValue >= 0 ? 'text-amber-400' : 'text-rose-500',
       emphasis: false,
     },
     {
@@ -189,10 +198,10 @@ export default function SummaryCards({
       emphasis: false,
     },
     {
-      label: 'NEXT MONTH',
-      value: animatedProjected,
-      delta: 'projected',
-      colorClass: projectedNet >= 0 ? 'text-amber-400' : 'text-rose-500',
+      label: 'EST. QUARTER END',
+      value: animatedEstEnd,
+      delta: 'your share at reconciliation',
+      colorClass: estQuarterEnd >= 0 ? 'text-amber-400' : 'text-rose-500',
       emphasis: false,
     },
   ];

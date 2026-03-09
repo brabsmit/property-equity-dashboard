@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Pencil, Trash2 } from 'lucide-react';
 import AddTransaction from './AddTransaction';
+import { getQuarterInfo, getDistinctQuarters, filterTransactionsByQuarter } from '../lib/quarters';
 
 const INITIAL_ROWS = 15;
 
@@ -118,11 +119,48 @@ export default function TransactionTable({
 }) {
   const [showAll, setShowAll] = useState(false);
 
-  const visible = showAll
-    ? transactions
-    : transactions.slice(0, INITIAL_ROWS);
+  // Quarter filter state — default to current quarter
+  const currentQ = getQuarterInfo();
+  const [selectedQuarter, setSelectedQuarter] = useState(
+    () => `${currentQ.year}-Q${currentQ.quarter}`
+  );
 
-  const hasMore = transactions.length > INITIAL_ROWS;
+  // Available quarters from transaction data
+  const quarters = useMemo(() => getDistinctQuarters(transactions), [transactions]);
+
+  // Ensure current quarter is always in the list
+  const allQuarters = useMemo(() => {
+    const currentKey = `${currentQ.year}-Q${currentQ.quarter}`;
+    const hasCurrentQ = quarters.some((q) => `${q.year}-Q${q.quarter}` === currentKey);
+    if (hasCurrentQ) return quarters;
+    return [{ quarter: currentQ.quarter, year: currentQ.year, label: currentQ.label }, ...quarters];
+  }, [quarters, currentQ.quarter, currentQ.year, currentQ.label]);
+
+  // Filter transactions by selected quarter (or show all)
+  const filtered = useMemo(() => {
+    if (selectedQuarter === 'all') return transactions;
+    const [yearStr, qStr] = selectedQuarter.split('-Q');
+    return filterTransactionsByQuarter(transactions, Number(qStr), Number(yearStr));
+  }, [transactions, selectedQuarter]);
+
+  // Subtotals for filtered view
+  const subtotals = useMemo(() => {
+    if (selectedQuarter === 'all') return null;
+    let income = 0;
+    let expenses = 0;
+    for (const t of filtered) {
+      const amt = t.amount ?? 0;
+      if (amt >= 0) income += amt;
+      else expenses += amt;
+    }
+    return { income, expenses, net: income + expenses };
+  }, [filtered, selectedQuarter]);
+
+  const visible = showAll
+    ? filtered
+    : filtered.slice(0, INITIAL_ROWS);
+
+  const hasMore = filtered.length > INITIAL_ROWS;
 
   return (
     <section>
@@ -133,11 +171,45 @@ export default function TransactionTable({
             Recent Transactions
           </h2>
           <span className="text-xs text-gray-500 dark:text-gray-500 font-mono">
-            {transactions.length} entries
+            {selectedQuarter === 'all'
+              ? `${transactions.length} entries`
+              : `${filtered.length} of ${transactions.length} entries`}
           </span>
         </div>
 
         {/* "+ Add Entry" button is cosmetic — the form below is always visible for admins */}
+      </div>
+
+      {/* Quarter filter tabs */}
+      <div className="flex gap-2 mb-4 overflow-x-auto pb-1 scrollbar-hide">
+        <button
+          onClick={() => { setSelectedQuarter('all'); setShowAll(false); }}
+          className={[
+            'px-3 py-1.5 rounded-full text-xs font-mono whitespace-nowrap transition-colors cursor-pointer',
+            selectedQuarter === 'all'
+              ? 'bg-amber-400/20 text-amber-400 dark:bg-amber-400/15'
+              : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800',
+          ].join(' ')}
+        >
+          All
+        </button>
+        {allQuarters.map((q) => {
+          const key = `${q.year}-Q${q.quarter}`;
+          return (
+            <button
+              key={key}
+              onClick={() => { setSelectedQuarter(key); setShowAll(false); }}
+              className={[
+                'px-3 py-1.5 rounded-full text-xs font-mono whitespace-nowrap transition-colors cursor-pointer',
+                selectedQuarter === key
+                  ? 'bg-amber-400/20 text-amber-400 dark:bg-amber-400/15'
+                  : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800',
+              ].join(' ')}
+            >
+              {q.label}
+            </button>
+          );
+        })}
       </div>
 
       {/* Container */}
@@ -231,6 +303,22 @@ export default function TransactionTable({
           )}
         </div>
 
+        {/* Quarter subtotal row */}
+        {subtotals && filtered.length > 0 && (
+          <div className="flex items-center justify-between px-4 py-3 border-t border-cream-100 dark:border-gray-800/30 bg-cream-100/50 dark:bg-gray-800/20">
+            <span className="text-xs font-mono uppercase tracking-wider text-gray-500 dark:text-gray-400">
+              Quarter Total
+            </span>
+            <div className="flex items-center gap-4 text-xs font-mono">
+              <span className="text-amber-400">+{currencyFmt.format(subtotals.income)}</span>
+              <span className="text-rose-500 dark:text-rose-400">-{currencyFmt.format(Math.abs(subtotals.expenses))}</span>
+              <span className={subtotals.net >= 0 ? 'text-amber-400 font-semibold' : 'text-rose-500 dark:text-rose-400 font-semibold'}>
+                Net: {subtotals.net >= 0 ? '+' : '-'}{currencyFmt.format(Math.abs(subtotals.net))}
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* View all / Show less */}
         {hasMore && (
           <button
@@ -239,7 +327,7 @@ export default function TransactionTable({
           >
             {showAll
               ? 'Show less'
-              : `View all ${transactions.length} transactions`}
+              : `View all ${filtered.length} transactions`}
           </button>
         )}
       </div>
